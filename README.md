@@ -1,0 +1,2 @@
+# CageEngine
+Cage Engine is a modular web server for predicting and evaluating molecular caging interactions. Developed as part of a research project, it enables users to submit host–guest molecular structures, run screening algorithms, and retrieve analytical results through a streamlined interface. This repository focuses on the backend implementation, which handles computation logic, data processing, and integration with external prediction tools.
