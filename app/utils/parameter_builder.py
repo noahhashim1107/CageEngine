@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from typing import Optional
 
+# parse delta_r and robustness mode into a list of values for prediction
 def parse_parameters(
         
         delta_r: Optional[float] = 0.0,
@@ -20,6 +21,7 @@ def parse_parameters(
         except ValueError:
             raise HTTPException(status_code=400, detail="detail_r must be a float.")
         
+        # generate 3 values: -r, 0 +r
         delta_r_values = [-delta_r, 0, delta_r]
     
     else:
