@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from app.handlers.file_handler import validate_file
-from app.tasks import run_prediction_task 
+from app.tasks import run_prediction_task, celery
+from celery.result import AsyncResult
 import logging
 
 ## removed previous functions and added to tasks, as i was unfamiliar with celery work and had to rework code include in github update
@@ -66,4 +67,23 @@ async def predict(
         logging.exception("Prediction request failed")
         raise HTTPException(status_code=500, details=str(error))
 
- 
+
+# API endpoint for getting results
+@router.get("/results/{task_id}")
+async def get_result(task_id: str):
+    task_result = AsyncResult(task_id, app=celery)
+
+    if task_result.state == "PENDING":
+        return {"status": "pending"}
+    
+    elif task_result.state == "SUCCESS":
+        return {"status": "complete", "data": task_result.result}
+    
+    elif task_result.state == "FAILURE":
+        return {
+            "status": "error",
+            "message": str(task_result.result)
+        }
+    
+    else:
+        return {"status": task_result.state}
