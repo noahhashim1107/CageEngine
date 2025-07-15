@@ -30,6 +30,8 @@ def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_r
         #show runtime
         start_time = time.time()
 
+        logging.info(f"[STARTED] Task ID: {self.request.id} | Files: {host_file['filename']}, {guest_file["filename"]} | Params: delta=r{delta_r}, robust={is_robust}")
+
         #validate file types for celery
         validate_file(host_file, ".mol2")
         validate_file(guest_file, ".mol2")
@@ -66,6 +68,8 @@ def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_r
         # Time between task start and finish
         runtime = round(time.time() - start_time, 2)
 
+        logging.info(f"[COMPLETED] Task ID: {self.request.id} | Summary: {summary} | Runtime: {runtime}s")
+
 
         return {
             
@@ -84,7 +88,7 @@ def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_r
         }
     
     except Exception as error:
-        logging.exception("Celery task failed")
+        logging.exception(f"[FAILED] Task ID: {self.request.id} | Error: {str(error)}")
         return {"status": "error", "message": str(error)}
       
     
