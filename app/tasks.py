@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 
 from celery import Celery  
@@ -25,6 +26,9 @@ celery = Celery(
 def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_robust):
     
     try:
+        
+        #show runtime
+        start_time = time.time()
 
         #validate file types for celery
         validate_file(host_file, ".mol2")
@@ -47,21 +51,44 @@ def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_r
             output = run_algorithm(host_path, guest_path, r, gridres_path)
             results.append({"delta_r" : r, "output": output})
 
-        # Cleanup temp files
-        cleanup_temp_files(host_path, guest_path, gridres_path)
+        
+        # Dummy parser as algo has not been inputed properly yet, uses resultsto generate basic "summary"
+        if any("strong" in r["output"].lower() for r in results):
+            summary = "strong cage"
+        
+        elif any("weak" in r["output"].lower() for r in results):
+            summary = "weak cage"
+        
+        else:
+            summary = "not a cage"
+
+        
+        # Time between task start and finish
+        runtime = round(time.time() - start_time, 2)
+
 
         return {
             
             "status": "success",
+            "summary": summary,
+            "runtime": f"{runtime}s",
             "results": results,
             "host_file": host_file["filename"],
             "guest_file": guest_file["filename"],
+            "grid_file": gridres_file["filename"],
             "parameters": {
                 "delta_r": delta_r,
                 "robustness": is_robust
-            }
+            },
+            "raw_outputs": results
         }
     
     except Exception as error:
         logging.exception("Celery task failed")
         return {"status": "error", "message": str(error)}
+      
+    
+    
+    finally:  # Cleans tempfiles up even on failure
+         
+        cleanup_temp_files(host_path, guest_path, gridres_path)
