@@ -8,9 +8,11 @@ from fastapi import FastAPI, UploadFile, HTTPException
 
 # a function for basic filetype validation to guard against bad uploads
 
-def validate_file(file_dict, expected_ext: str):
-    if not file_dict["filename"].lower().endswith(expected_ext):
-        raise ValueError(f"Invalid file type for {file_dict['filename']}. Expected {expected_ext}")
+def validate_file(file, expected_ext: str):
+    filename = file["filename"] if isinstance(file, dict) else file.filename
+
+    if not filename.lower().endswith(expected_ext):
+        raise HTTPException(status_code=400, detail=f"Invalid file type for {filename}. Expected {expected_ext}")
 
 
 # save uploaded files to disk (not used in current celery setup)

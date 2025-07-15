@@ -65,7 +65,7 @@ async def predict(
         raise help
     except Exception as error:
         logging.exception("Prediction request failed")
-        raise HTTPException(status_code=500, details=str(error))
+        raise HTTPException(status_code=500, detail=str(error))
 
 
 # API endpoint for getting results
