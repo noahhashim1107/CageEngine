@@ -1,0 +1,35 @@
+services:
+  web:
+    build: .
+    container_name: cageengine_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rabbitmq
+    environment:
+      - CELERY_BROKER_URL=amqp://rabbitmq:5672/
+      - CELERY_RESULT_BACKEND=rpc://
+    volumes:
+      - .:/app
+
+  celery:
+    build: .
+    container_name: cageengine_worker
+    command: celery -A app.tasks worker --loglevel=info
+    depends_on:
+      - rabbitmq
+    environment:
+      - CELERY_BROKER_URL=amqp://rabbitmq:5672/
+      - CELERY_RESULT_BACKEND=rpc://
+    volumes:
+      - .:/app
+
+  rabbitmq:
+    image: rabbitmq:3.13.7-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"     # Celery broker port
+      - "15672:15672"   # RabbitMQ management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
