@@ -1,0 +1,18 @@
+create virtual env
+python -m venv .venv
+
+activate virtual env
+.venv\Scripts\Activate.ps1
+
+localhost fastapi server
+uvicorn app.main:app --reload
+
+http://127.0.0.1:8000/docs
+
+RabbitMQ -
+
+startup server on windows search 
+
+access through domain 127.0.0.1:15672
+
+docker compose up --build
