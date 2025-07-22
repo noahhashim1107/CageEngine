@@ -2,7 +2,8 @@ import os
 import time
 import logging
 
-from celery import Celery  
+from celery import Celery
+from kombu import Queue, Exchange
 
 from app.handlers.execution_handler import run_algorithm
 from app.handlers.file_handler import validate_file, reconstruct_file, cleanup_temp_files
@@ -15,9 +16,24 @@ celery = Celery(
     "tasks",
 
     ## Specifying broker and backend (default RabbitMQ)
-    broker=os.getenv("CELERY_BROKER_URL", "amqp://localhost:5672"),
+    broker=os.getenv("CELERY_BROKER_URL", "amqp://cageengine:deva02@rabbitmq:5672//"),
     backend=os.getenv("CELERY_RESULT_BACKEND", "rpc://")             
 )
+
+
+# Queue configuration for better observation and message routing
+celery.conf.task_queues = (
+
+    Queue('celery', Exchange('celery'), routing_key='celery', durable=True),
+)
+celery.conf.task_default_queue = 'celery'
+celery.conf.task_default_exchange = 'celery'
+celery.conf.task_default_routing_key = 'celery'
+
+# Enable monitoring events (for RabbitMQ UI visibility)
+celery.conf.worker_send_task_events = True
+celery.conf.task_send_sent_event = True
+
 
 # Celery task for running prediciton algo asynchronously
 ## Bind task to access "self" for retries/states
@@ -26,6 +42,9 @@ celery = Celery(
 def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_robust):
     
     try:
+
+        # simulate task by 30 seconds
+        time.sleep(30)
         
         #show runtime
         start_time = time.time()
