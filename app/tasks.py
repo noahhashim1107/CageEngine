@@ -67,21 +67,40 @@ def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_r
         
         ## Run algo for each delta r
         results = []
-        for r in deltas:
+        for i, r in enumerate(deltas["delta_r_values"], start=1):
 
             output = run_algorithm(host_path, guest_path, r, gridres_path)
-            results.append({"delta_r" : r, "output": output})
+            
+            # Dummy parser as algo has not been inputed properly yet, uses resultsto generate basic "summary"
+            if "strong" in output.lower():
+                parsed = "strong"
+            
+            elif "weak" in output.lower():
+                parsed = "weak"
+            
+            else:
+                parsed = "none"
+            
+            
+            results.append({
+                "run_id": i,
+                "delta_r": r,
+                "raw_output": output.strip(),  # trim whitespace
+                "parsed_result": parsed # for algo implementation
+            })
 
-        
-        # Dummy parser as algo has not been inputed properly yet, uses resultsto generate basic "summary"
-        if any("strong" in r["output"].lower() for r in results):
+        # Determine summary
+
+        if any(r["parsed_result"] == "strong" for r in results):
             summary = "strong cage"
         
-        elif any("weak" in r["output"].lower() for r in results):
+        elif any(r["parsed_result"] == "weak" for r in results):
             summary = "weak cage"
         
         else:
             summary = "not a cage"
+        
+        
 
         
         # Time between task start and finish
@@ -95,15 +114,13 @@ def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_r
             "status": "success",
             "summary": summary,
             "runtime": f"{runtime}s",
-            "results": results,
-            "host_file": host_file["filename"],
-            "guest_file": guest_file["filename"],
-            "grid_file": gridres_file["filename"],
-            "parameters": {
-                "delta_r": delta_r,
-                "robustness": is_robust
+            "files": {
+                "host": host_file["filename"],
+                "guest": guest_file["filename"],
+                "grid": gridres_file["filename"]
             },
-            "raw_outputs": results
+            "parameters": deltas,
+            "results": results
         }
     
     except Exception as error:

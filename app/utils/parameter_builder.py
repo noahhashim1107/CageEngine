@@ -30,11 +30,11 @@ def parse_parameters(
 
     
     return {
-        "delta_r": delta_r,
-        "robustness": is_robust,
-        "runs": len(delta_r_values),
-        "delta_r_values": delta_r_values
-    }
+    "base_delta_r": delta_r,
+    "is_robust": is_robust,
+    "num_runs": len(delta_r_values),
+    "delta_r_values": delta_r_values
+    }   
         
 
  
