@@ -30,7 +30,7 @@ celery.conf.task_default_queue = 'celery'
 celery.conf.task_default_exchange = 'celery'
 celery.conf.task_default_routing_key = 'celery'
 
-# Enable monitoring events (for RabbitMQ UI visibility)
+# Enable monitoring events (for RabbitMQ UI visibility) - currently does not work
 celery.conf.worker_send_task_events = True
 celery.conf.task_send_sent_event = True
 
