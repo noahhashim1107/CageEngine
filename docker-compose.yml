@@ -12,6 +12,7 @@ services:
       - CELERY_RESULT_BACKEND=rpc://
     volumes:
       - .:/app
+      - ./grids:/app/grids
 
   celery:
     build: .
@@ -24,6 +25,7 @@ services:
       - CELERY_RESULT_BACKEND=rpc://
     volumes:
       - .:/app
+      - ./grids:/app/grids
 
   rabbitmq:
     image: rabbitmq:3.13.7-management

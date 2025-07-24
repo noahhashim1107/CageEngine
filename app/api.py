@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from app.handlers.file_handler import validate_file
 from app.tasks import run_prediction_task, celery
@@ -14,46 +15,63 @@ router = APIRouter()
 
 async def predict(
     
-    host_file: UploadFile = File(...),
-    guest_file: UploadFile = File(...),
-    gridres_file: UploadFile = File(...),
-    
+    host_files: List[UploadFile] = File(...),
+    guest_files: List[UploadFile] = File(...),
+    grid: str = Form("grid_4.dat"),
     delta_r: float = Form(...),
-    
     is_robust: bool = Form(True)
    
 ):
     
     try:
 
+        # file limit checks
+        if len(host_files) > 500:
+            raise HTTPException(status_code=400, detail="Maximum of 500 host files allowed")
+        if len(guest_files) > 500:
+            raise HTTPException(status_code=400, detail="Maximum of 500 guest files allowed")
+        if len(host_files) + len(guest_files) > 1000:
+            raise HTTPException(status_code=400, detail="Total file count must not exceed 1000 files")
+        
+        
         # Validate file types
-        validate_file(host_file, ".mol2")
-        validate_file(guest_file, ".mol2")
-        validate_file(gridres_file, ".dat")
+        for file in host_files:
+            validate_file(file, ".mol2")
 
-        # Read file contents in bytes
-        host_bytes = await host_file.read()
-        guest_bytes = await guest_file.read()
-        gridres_bytes = await gridres_file.read()
+        for file in guest_files:
+            validate_file(file, ".mol2")
+       
+        
+        if grid not in ["grid_2.dat", "grid_3.dat", "grid_4.dat"]:
+            raise HTTPException(status_code=400, detail="Invalid grid selection")
+
+        
+        
+        # Read and encode host and guest file contents 
+        host_payloads = []
+        for file in host_files:
+            content = await file.read()
+            host_payloads.append({
+                "filename": file.filename,
+                "content": content.decode("latin1")
+            })
+
+        guest_payloads = []
+        for file in guest_files:
+            content = await file.read()
+            guest_payloads.append({
+                "filename": file.filename,
+                "content": content.decode("latin1")
+            })
+
+        
 
         # Submit celery task asynchronously 
         task = run_prediction_task.delay(
 
-            {
-                "filename": host_file.filename,
-                "content": host_bytes.decode('latin1')
-            },
-            
-            {
-                "filename": guest_file.filename,
-                "content": guest_bytes.decode('latin1')
-            },
-            
-            {
-                "filename": gridres_file.filename,
-                "content": gridres_bytes.decode('latin1')
-            },
-            
+            host_payloads,
+            guest_payloads,
+            grid,
             delta_r,
             is_robust
         )

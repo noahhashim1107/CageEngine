@@ -39,86 +39,97 @@ celery.conf.task_send_sent_event = True
 ## Bind task to access "self" for retries/states
 @celery.task(bind=True)
 
-def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_robust):
+def run_prediction_task(self, host_files, guest_files, grid_name, delta_r, is_robust):
     
     try:
 
-        # simulate task by 30 seconds
-        time.sleep(30)
-        
-        #show runtime
+        # show runtime and log
         start_time = time.time()
+        logging.info(f"[STARTED] Task ID: {self.request.id} | Grid: {grid_name} | Params: delta_r={delta_r}, robust={is_robust}")
+        
+       
+        # validate and rebuild file types for celery
+        host_paths = []
+        guest_paths = []
 
-        logging.info(f"[STARTED] Task ID: {self.request.id} | Files: {host_file['filename']}, {guest_file["filename"]} | Params: delta=r{delta_r}, robust={is_robust}")
+        
+        for f in host_files:
+            validate_file(f, ".mol2")
+            path = reconstruct_file(f, suffix=".mol2")
+            host_paths.append((f["filename"], path))
 
-        #validate file types for celery
-        validate_file(host_file, ".mol2")
-        validate_file(guest_file, ".mol2")
-        validate_file(gridres_file, ".dat")
+        for f in guest_files:
+            validate_file(f, ".mol2")
+            path = reconstruct_file(f, suffix=".mol2")
+            guest_paths.append((f["filename"], path))
 
-        ## rebuild temp files
-        host_path = reconstruct_file(host_file, suffix=".mol2")
-        guest_path = reconstruct_file(guest_file, suffix=".mol2")
-        gridres_path = reconstruct_file(gridres_file, suffix=".dat")
 
-        ## Parse delta r logic: returns list of one or three values
+        # locate grid file (in a folder)
+
+        grid_dir = "/app/grids"
+        grid_path = os.path.join(grid_dir, grid_name)
+        if not os.path.exists(grid_path):
+            raise Exception(f"Grid file {grid_name} not found")
+        
+        
+        # gets delta_r variants 
         deltas = parse_parameters(delta_r, is_robust)
 
         
-        ## Run algo for each delta r
+        # Run algo for each delta r
         results = []
-        for i, r in enumerate(deltas["delta_r_values"], start=1):
+        
+        run_id = 0
+        for host_name, host_path in host_paths:
+            for guest_name, guest_path in guest_paths:
+                for r in deltas["delta_r_values"]:
+                    run_id += 1
+                    output = run_algorithm(host_path, guest_path, r, grid_path)
 
-            output = run_algorithm(host_path, guest_path, r, gridres_path)
+                    # Dummy parser as algo has not been inputed properly yet, uses resultsto generate basic "summary"
+                    if "strong" in output.lower():
+                        parsed = "strong"
             
-            # Dummy parser as algo has not been inputed properly yet, uses resultsto generate basic "summary"
-            if "strong" in output.lower():
-                parsed = "strong"
+                    elif "weak" in output.lower():
+                        parsed = "weak"
             
-            elif "weak" in output.lower():
-                parsed = "weak"
-            
-            else:
-                parsed = "none"
+                    else:
+                        parsed = "none"
             
             
-            results.append({
-                "run_id": i,
-                "delta_r": r,
-                "raw_output": output.strip(),  # trim whitespace
-                "parsed_result": parsed # for algo implementation
-            })
+                    results.append({
+                        "run_id": run_id,
+                        "host": host_name,
+                        "guest": guest_name,
+                        "delta_r": r,
+                        "grid": grid_name,
+                        "raw_output": output.strip(),  # trim whitespace
+                        "parsed_result": parsed # for algo implementation
+                    })
 
-        # Determine summary
-
+        
+        # final summary for cage
         if any(r["parsed_result"] == "strong" for r in results):
             summary = "strong cage"
-        
+
         elif any(r["parsed_result"] == "weak" for r in results):
             summary = "weak cage"
         
         else:
             summary = "not a cage"
         
-        
 
         
         # Time between task start and finish
         runtime = round(time.time() - start_time, 2)
-
         logging.info(f"[COMPLETED] Task ID: {self.request.id} | Summary: {summary} | Runtime: {runtime}s")
 
 
         return {
-            
             "status": "success",
             "summary": summary,
             "runtime": f"{runtime}s",
-            "files": {
-                "host": host_file["filename"],
-                "guest": guest_file["filename"],
-                "grid": gridres_file["filename"]
-            },
+            "grid_used": grid_name,
             "parameters": deltas,
             "results": results
         }
@@ -131,4 +142,4 @@ def run_prediction_task(self, host_file, guest_file, gridres_file, delta_r, is_r
     
     finally:  # Cleans tempfiles up even on failure
          
-        cleanup_temp_files(host_path, guest_path, gridres_path)
+        cleanup_temp_files(*[p for _, p in host_paths], *[p for _, p in guest_paths])

@@ -1,58 +1,42 @@
 import os
 import shutil
 import tempfile
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import UploadFile, HTTPException
 
-
-
-
-# a function for basic filetype validation to guard against bad uploads
 
 def validate_file(file, expected_ext: str):
+    
+   # checks if the uploaded file (UploadFile or dict) has the expected extension
+    
     filename = file["filename"] if isinstance(file, dict) else file.filename
 
     if not filename.lower().endswith(expected_ext):
-        raise HTTPException(status_code=400, detail=f"Invalid file type for {filename}. Expected {expected_ext}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type for {filename}. Expected {expected_ext}"
+        )
 
 
-# save uploaded files to disk (not used in current celery setup)
-def save_files(host: UploadFile, guest: UploadFile, gridres: UploadFile):
-    validate_file(host, ".mol2")
-    validate_file(guest, ".mol2")
-    validate_file(gridres, ".dat")
-
-    host_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mol2")
-    guest_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mol2")
-    gridres_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".dat")
-
-    with open(host_temp.name, "wb") as f:
-        shutil.copyfileobj(host.file, f)
-
-    with open(guest_temp.name, "wb") as f:
-        shutil.copyfileobj(guest.file, f)
-
-    with open(gridres_temp.name, "wb") as f:
-        shutil.copyfileobj(gridres.file, f)
-
-    return host_temp.name, guest_temp.name, gridres_temp.name
-
-
-# reconstruct file from base64-like contnent and write to disk
-def reconstruct_file(file_dict, suffix: str):
+def reconstruct_file(file_dict: dict, suffix: str) -> str:
+    """
+    reconstructs a file from a dictionary payload with 'filename' and 'content',
+    writes it to disk as a temporary file, and returns the path.
+    """
     temp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-    
+
     with open(temp.name, "wb") as f:
-        f.write(file_dict["content"].encode('latin1'))
-    
+        f.write(file_dict["content"].encode("latin1"))  # latin1 for byte for byte decoding
+
     return temp.name
 
-# delete temporary files to clean up disk space (optimisation)
-def cleanup_temp_files(*filepaths):
-    
+
+def cleanup_temp_files(*filepaths: str):
+    """
+    Deletes temporary files passed as arguments
+    Logs warning if file deletion fails
+    """
     for path in filepaths:
-       
         try:
             os.remove(path)
-
         except Exception as error:
             print(f"Warning: Failed to delete temp file {path} - {error}")
