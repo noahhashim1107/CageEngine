@@ -79,7 +79,7 @@ def run_prediction_task(self, host_files, guest_files, grid_name, delta_r, is_ro
         # Run algo for each delta r
         results = []
         
-        run_id = 0
+        run_id = -1
         for host_name, host_path in host_paths:
             for guest_name, guest_path in guest_paths:
                 for r in deltas["delta_r_values"]:
