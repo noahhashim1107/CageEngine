@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import random # since algo not implememnted
 
 from celery import Celery
 from kombu import Queue, Exchange
@@ -78,56 +79,38 @@ def run_prediction_task(self, host_files, guest_files, grid_name, delta_r, is_ro
         
         # Run algo for each delta r
         results = []
-        
-        run_id = -1
+        run_id = 0
+
         for host_name, host_path in host_paths:
             for guest_name, guest_path in guest_paths:
+                pair_runs = []
                 for r in deltas["delta_r_values"]:
-                    run_id += 1
+                    
                     output = run_algorithm(host_path, guest_path, r, grid_path)
 
-                    # Dummy parser as algo has not been inputed properly yet, uses resultsto generate basic "summary"
-                    if "strong" in output.lower():
-                        parsed = "strong"
-            
-                    elif "weak" in output.lower():
-                        parsed = "weak"
-            
-                    else:
-                        parsed = "none"
-            
-            
-                    results.append({
+                    caging_result = random.choice(["strong cage", "weak cage", "not a cage"])
+
+                    pair_runs.append({
                         "run_id": run_id,
-                        "host": host_name,
-                        "guest": guest_name,
                         "delta_r": r,
-                        "grid": grid_name,
-                        "raw_output": output.strip(),  # trim whitespace
-                        "parsed_result": parsed # for algo implementation
+                        "caging_result": caging_result
                     })
+                    run_id += 1
 
-        
-        # final summary for cage
-        if any(r["parsed_result"] == "strong" for r in results):
-            summary = "strong cage"
-
-        elif any(r["parsed_result"] == "weak" for r in results):
-            summary = "weak cage"
-        
-        else:
-            summary = "not a cage"
-        
+                results.append({
+                    "host": host_name,
+                    "guest": guest_name,
+                    "runs": pair_runs
+                })
 
         
         # Time between task start and finish
         runtime = round(time.time() - start_time, 2)
-        logging.info(f"[COMPLETED] Task ID: {self.request.id} | Summary: {summary} | Runtime: {runtime}s")
+        logging.info(f"[COMPLETED] Task ID: {self.request.id} | Runtime: {runtime}s")
 
 
         return {
             "status": "success",
-            "summary": summary,
             "runtime": f"{runtime}s",
             "grid_used": grid_name,
             "parameters": deltas,
