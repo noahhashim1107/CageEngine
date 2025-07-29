@@ -79,28 +79,38 @@ def run_prediction_task(self, host_files, guest_files, grid_name, delta_r, is_ro
         
         # Run algo for each delta r
         results = []
-        run_id = 0
+        
 
         for host_name, host_path in host_paths:
             for guest_name, guest_path in guest_paths:
-                pair_runs = []
+                prediction_results = {}
+
                 for r in deltas["delta_r_values"]:
                     
                     output = run_algorithm(host_path, guest_path, r, grid_path)
+                    prediction_results[r] = random.choice(["cage", "not a cage"])
 
-                    caging_result = random.choice(["strong cage", "weak cage", "not a cage"])
+                
+                if not is_robust:
+                    final_result = prediction_results[0.0]
+                
+                else:
+                    neutral = prediction_results[0.0]
+                    plus = prediction_results.get(delta_r)
+                    minus = prediction_results.get(-delta_r)
 
-                    pair_runs.append({
-                        "run_id": run_id,
-                        "delta_r": r,
-                        "caging_result": caging_result
-                    })
-                    run_id += 1
+                    if neutral == "not a cage":
+                        final_result = "not a cage"
+                    elif plus == "cage" and minus == "cage":
+                        final_result = "strong cage"
+                    else:
+                        final_result = "weak cage"
 
+                
                 results.append({
                     "host": host_name,
                     "guest": guest_name,
-                    "runs": pair_runs
+                    "caging_results": final_result
                 })
 
         
