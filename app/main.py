@@ -6,7 +6,6 @@ from app.logging_config import configure_logging
 
 app = FastAPI()
 configure_logging()
-app.include_router(router)
 
 origins = [
     "http://localhost:3000",
