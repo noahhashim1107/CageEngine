@@ -31,10 +31,9 @@ def test_run_prediction_task_success(mock_algo, dummy_file, temp_grid_file):
 
     result = run_prediction_task(
         
-        self = None,
         host_files = [dummy_file],
         guest_files = [dummy_file],
-        grid_name = "grid_4.dat"
+        grid_name = "grid_4.dat",
         delta_r = 0.3,
         is_robust = True
     )
@@ -45,7 +44,7 @@ def test_run_prediction_task_success(mock_algo, dummy_file, temp_grid_file):
     assert "runtime" in result
     assert "results" in result
     assert isinstance(result["results"], list)
-    assert result["results"][0]["caging_results"] in ["strong cage", "weak cage" "not a cage"]
+    assert result["results"][0]["caging_results"] in ["strong cage", "weak cage", "not a cage"]
 
 
 @patch("app.handlers.execution_handler.run_algorithm", return_value = "simulated")
@@ -53,7 +52,6 @@ def test_run_prediction_task_without_robustness(mock_algo, dummy_file, temp_grid
 
     result = run_prediction_task(
 
-        self = None,
         host_files = [dummy_file],
         guest_files = [dummy_file],
         grid_name = "grid_4.dat",
@@ -73,7 +71,6 @@ def test_run_prediction_task_invalid_grid(dummy_file):
 
     result = run_prediction_task(
 
-        self = None,
         host_files = [dummy_file],
         guest_files = [dummy_file],
         grid_name = "nonexistent.dat",

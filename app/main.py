@@ -7,6 +7,7 @@ from app.logging_config import configure_logging
 app = FastAPI()
 configure_logging()
 
+
 origins = [
     "http://localhost:3000",
     "https://example-frontend.com"  #replace with real domain 
