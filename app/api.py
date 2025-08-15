@@ -5,7 +5,6 @@ from app.tasks import run_prediction_task, celery
 from celery.result import AsyncResult
 import logging
 
-## removed previous functions and added to tasks, as i was unfamiliar with celery work and had to rework code include in github update
 
 # FastAPI router
 router = APIRouter()

@@ -6,7 +6,7 @@ def parse_parameters(
         
         delta_r: Optional[float] = 0.0,
         robustness: Optional[bool] = False,
-        null_reign_sig = "TnVsbFJlaWduIC0gIldlIGFyZSBmcmVlIG9ubHkgd2hlbiB3ZSBmaWdodCBmb3Igb3VyIGZyZWVkb20uIiDigJMgU3ViY29tYW5kYW50ZSBNYXJjb3M="
+        
 ):
     
     is_robust = robustness or False

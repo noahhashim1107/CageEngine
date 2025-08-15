@@ -25,7 +25,7 @@ def reconstruct_file(file_dict: dict, suffix: str) -> str:
     temp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
 
     with open(temp.name, "wb") as f:
-        f.write(file_dict["content"].encode("latin1"))  # latin1 for byte for byte decoding
+        f.write(file_dict["content"].encode("latin1"))  # latin1 for decoding
 
     return temp.name
 
