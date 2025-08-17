@@ -42,7 +42,7 @@ async def predict(
        
         
         if grid not in ["grid_2.dat", "grid_3.dat", "grid_4.dat"]:
-            raise HTTPException(status_code=400, detail="Invalid grid selection")
+            raise HTTPException(status_code=400, detail="Invalid grid selection, grid file {grid} not found")
 
         
         
